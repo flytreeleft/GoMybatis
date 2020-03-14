@@ -1,6 +1,8 @@
 package GoMybatis
 
 import (
+	"database/sql"
+
 	"github.com/zhuxiujia/GoMybatis/tx"
 	"github.com/zhuxiujia/GoMybatis/utils"
 )
@@ -22,6 +24,12 @@ func (it *SessionFactorySession) Query(sqlorArgs string) ([]map[string][]byte, e
 	}
 	return it.Session.Query(sqlorArgs)
 }
+func (it *SessionFactorySession) QueryNew(sqlorArgs string) (*sql.Rows, error) {
+	if it.Session == nil {
+		return nil, utils.NewError("SessionFactorySession", " can not run Id(),it.Session == nil")
+	}
+	return it.Session.QueryNew(sqlorArgs)
+}
 func (it *SessionFactorySession) Exec(sqlorArgs string) (*Result, error) {
 	if it.Session == nil {
 		return nil, utils.NewError("SessionFactorySession", " can not run Exec(),it.Session == nil")
@@ -34,6 +42,12 @@ func (it *SessionFactorySession) QueryPrepare(sqlorArgs string, args ...interfac
 		return nil, utils.NewError("SessionFactorySession", " can not run Id(),it.Session == nil")
 	}
 	return it.Session.QueryPrepare(sqlorArgs, args...)
+}
+func (it *SessionFactorySession) QueryPrepareNew(sqlorArgs string, args ...interface{}) (*sql.Rows, error) {
+	if it.Session == nil {
+		return nil, utils.NewError("SessionFactorySession", " can not run Id(),it.Session == nil")
+	}
+	return it.Session.QueryPrepareNew(sqlorArgs, args...)
 }
 func (it *SessionFactorySession) ExecPrepare(sqlorArgs string, args ...interface{}) (*Result, error) {
 	if it.Session == nil {

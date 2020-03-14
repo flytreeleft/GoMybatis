@@ -309,6 +309,32 @@ func (it *LocalSession) Query(sqlorArgs string) ([]map[string][]byte, error) {
 	return nil, nil
 }
 
+func (it *LocalSession) QueryNew(sqlorArgs string) (*sql.Rows, error) {
+	if it.isClosed == true {
+		return nil, utils.NewError("LocalSession", " can not Query() a Closed Session!")
+	}
+	if it.newLocalSession != nil {
+		return it.newLocalSession.QueryNew(sqlorArgs)
+	}
+
+	var rows *sql.Rows
+	var err error
+	var t, _ = it.txStack.Last()
+	if t != nil {
+		rows, err = t.Query(sqlorArgs)
+		err = it.dbErrorPack(err)
+	} else {
+		rows, err = it.db.Query(sqlorArgs)
+		err = it.dbErrorPack(err)
+	}
+	if err != nil {
+		return nil, err
+	} else {
+		return rows, nil
+	}
+	return nil, nil
+}
+
 func (it *LocalSession) Exec(sqlorArgs string) (*Result, error) {
 	if it.isClosed == true {
 		return nil, utils.NewError("LocalSession", " can not Exec() a Closed Session!")
@@ -381,6 +407,49 @@ func (it *LocalSession) QueryPrepare(sqlPrepare string, args ...interface{}) ([]
 		return nil, err
 	} else {
 		return rows2maps(rows)
+	}
+	return nil, nil
+}
+
+func (it *LocalSession) QueryPrepareNew(sqlPrepare string, args ...interface{}) (*sql.Rows, error) {
+	if it.isClosed == true {
+		return nil, utils.NewError("LocalSession", " can not Query() a Closed Session!")
+	}
+	if it.newLocalSession != nil {
+		return it.newLocalSession.QueryNew(sqlPrepare)
+	}
+
+	var rows *sql.Rows
+	var err error
+	var t, _ = it.txStack.Last()
+	if t != nil {
+		stmt, err := t.Prepare(sqlPrepare)
+		err = it.dbErrorPack(err)
+		if err != nil {
+			return nil, err
+		}
+		rows, err = stmt.Query(args...)
+		err = it.dbErrorPack(err)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		stmt, err := it.db.Prepare(sqlPrepare)
+		err = it.dbErrorPack(err)
+		if err != nil {
+			return nil, err
+		}
+
+		rows, err = stmt.Query(args...)
+		err = it.dbErrorPack(err)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if err != nil {
+		return nil, err
+	} else {
+		return rows, nil
 	}
 	return nil, nil
 }

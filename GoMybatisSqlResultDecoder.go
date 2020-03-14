@@ -1,11 +1,13 @@
 package GoMybatis
 
 import (
-	"github.com/zhuxiujia/GoMybatis/utils"
+	"database/sql"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/zhuxiujia/GoMybatis/utils"
 )
 
 type GoMybatisSqlResultDecoder struct {
@@ -42,6 +44,64 @@ func (it GoMybatisSqlResultDecoder) Decode(resultMap map[string]*ResultProperty,
 	}
 	resultValue.Elem().Set(resultV)
 	return nil
+}
+
+func (it GoMybatisSqlResultDecoder) DecodeNew(resultMap map[string]*ResultProperty, rows *sql.Rows, result interface{}) (int, error) {
+	if rows == nil || result == nil {
+		return 0, nil
+	}
+	var resultV = reflect.ValueOf(result)
+	var resultValue = resultV
+
+	scope := &Scope{Value: result}
+
+	var (
+		isSlice, isPtr bool
+		resultType     reflect.Type
+		results        = scope.IndirectValue()
+	)
+	if kind := results.Kind(); kind == reflect.Slice {
+		isSlice = true
+		resultType = results.Type().Elem()
+		results.Set(reflect.MakeSlice(results.Type(), 0, 0))
+
+		if resultType.Kind() == reflect.Ptr {
+			isPtr = true
+			resultType = resultType.Elem()
+		}
+	} else if kind != reflect.Struct {
+		if res, err := rows2maps(rows); err != nil {
+			return 0, err
+		} else {
+			return len(res), it.Decode(resultMap, res, result)
+		}
+	}
+
+	columns, _ := rows.Columns()
+	var rowCount = 0
+	for rows.Next() {
+		rowCount += 1
+		elem := results
+		if isSlice {
+			elem = reflect.New(resultType).Elem()
+		}
+
+		fields := scope.New(elem.Addr().Interface()).Fields()
+		if err := scope.scan(rows, columns, fields, resultMap); err != nil {
+			return 0, err
+		}
+
+		if isSlice {
+			if isPtr {
+				results.Set(reflect.Append(results, elem.Addr()))
+			} else {
+				results.Set(reflect.Append(results, elem))
+			}
+		}
+	}
+
+	resultValue.Elem().Set(results)
+	return rowCount, nil
 }
 
 func (it GoMybatisSqlResultDecoder) sqlStructConvert(resultMap map[string]*ResultProperty, resultTItemType reflect.Type, sItemMap map[string][]byte) reflect.Value {

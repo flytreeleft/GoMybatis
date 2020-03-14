@@ -14,9 +14,11 @@ type Result struct {
 type Session interface {
 	Id() string
 	Query(sqlorArgs string) ([]map[string][]byte, error)
+	QueryNew(sqlorArgs string) (*sql.Rows, error)
 	Exec(sqlorArgs string) (*Result, error)
 	//Prepare sql, example sqlPrepare: select * from table where id = ?   ,   args：'1'
 	QueryPrepare(sqlPrepare string, args ...interface{}) ([]map[string][]byte, error)
+	QueryPrepareNew(sqlPrepare string, args ...interface{}) (*sql.Rows, error)
 	//Prepare sql, example sqlPrepare: select * from table where id = ?   ,   args：'1'
 	ExecPrepare(sqlPrepare string, args ...interface{}) (*Result, error)
 	Rollback() error

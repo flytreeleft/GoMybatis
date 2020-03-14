@@ -234,7 +234,21 @@ func makeResultMaps(xmls map[string]etree.Token) map[string]map[string]*ResultPr
 						Property: elementItem.SelectAttrValue("property", ""),
 						LangType: elementItem.SelectAttrValue("langType", ""),
 					}
-					resultPropertyMap[property.Column] = &property
+
+					if elementItem.Tag == "association" || elementItem.Tag == "collection" {
+						for _, childElementItem := range elementItem.ChildElements() {
+							var childProperty = ResultProperty{
+								XMLName:  childElementItem.Tag,
+								Column:   childElementItem.SelectAttrValue("column", ""),
+								Property: property.Property+"."+childElementItem.SelectAttrValue("property", ""),
+								LangType: childElementItem.SelectAttrValue("langType", ""),
+							}
+
+							resultPropertyMap[childProperty.Column] = &childProperty
+						}
+					} else {
+						resultPropertyMap[property.Column] = &property
+					}
 				}
 				resultMaps[xmlItem.SelectAttrValue("id", "")] = resultPropertyMap
 			}
@@ -362,12 +376,22 @@ func exeMethodByXml(elementType ElementType, beanName string, sessionEngine Sess
 			sessionEngine.LogSystem().SendLog("[GoMybatis] [", session.Id(), "] Query ==> "+sql)
 			sessionEngine.LogSystem().SendLog("[GoMybatis] [", session.Id(), "] Args  ==> "+utils.SprintArray(array_arg))
 		}
-		res, err := session.QueryPrepare(sql, array_arg...)
+		rows, err := session.QueryPrepareNew(sql, array_arg...)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		rowCount, err := sessionEngine.SqlResultDecoder().DecodeNew(resultMap, rows, returnValue.Interface())
+		if err != nil {
+			return err
+		}
+
 		defer func() {
 			if sessionEngine.LogEnable() {
 				var RowsAffected = "0"
-				if err == nil && res != nil {
-					RowsAffected = strconv.Itoa(len(res))
+				if err == nil && rows != nil {
+					RowsAffected = strconv.Itoa(rowCount)
 				}
 				sessionEngine.LogSystem().SendLog("[GoMybatis] [", session.Id(), "] ReturnRows <== "+RowsAffected)
 				if err != nil {
@@ -375,13 +399,6 @@ func exeMethodByXml(elementType ElementType, beanName string, sessionEngine Sess
 				}
 			}
 		}()
-		if err != nil {
-			return err
-		}
-		err = sessionEngine.SqlResultDecoder().Decode(resultMap, res, returnValue.Interface())
-		if err != nil {
-			return err
-		}
 	} else {
 		if sessionEngine.LogEnable() {
 			sessionEngine.LogSystem().SendLog("[GoMybatis] [", session.Id(), "] Exec ==> "+sql)
