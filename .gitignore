@@ -30,6 +30,7 @@ yarn-error.log*
 *.ntvs*
 *.njsproj
 *.sln
+*.iml
 
 #vscode
 /.vscode
