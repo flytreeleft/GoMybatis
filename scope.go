@@ -8,7 +8,6 @@ package GoMybatis
 import (
 	"database/sql"
 	"go/ast"
-	"log"
 	"reflect"
 	"strings"
 	"sync"
@@ -220,7 +219,22 @@ func (scope *Scope) GetModelStruct() *ModelStruct {
 				} else {
 					switch indirectType.Kind() {
 					case reflect.Slice:
-						log.Print("Ignore "+field.Name)
+						// var elemType = field.Struct.Type
+						// for elemType.Kind() == reflect.Slice || elemType.Kind() == reflect.Ptr {
+						// 	elemType = elemType.Elem()
+						// }
+						//
+						// if elemType.Kind() == reflect.Struct {
+						// 	for _, subField := range scope.New(fieldValue).GetModelStruct().StructFields {
+						// 		subField = subField.clone()
+						// 		subField.Name = fieldStruct.Name+"."+subField.Name
+						// 		subField.Names = append([]string{fieldStruct.Name}, subField.Names...)
+						//
+						// 		modelStruct.StructFields = append(modelStruct.StructFields, subField)
+						// 	}
+						// } else {
+						// 	field.IsNormal = true
+						// }
 					case reflect.Struct:
 						for _, subField := range scope.New(fieldValue).GetModelStruct().StructFields {
 							subField = subField.clone()

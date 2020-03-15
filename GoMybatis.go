@@ -233,6 +233,7 @@ func makeResultMaps(xmls map[string]etree.Token) map[string]map[string]*ResultPr
 						Column:   elementItem.SelectAttrValue("column", ""),
 						Property: elementItem.SelectAttrValue("property", ""),
 						LangType: elementItem.SelectAttrValue("langType", ""),
+						IsPrimary: elementItem.Tag == "id",
 					}
 
 					if elementItem.Tag == "association" || elementItem.Tag == "collection" {
@@ -242,6 +243,7 @@ func makeResultMaps(xmls map[string]etree.Token) map[string]map[string]*ResultPr
 								Column:   childElementItem.SelectAttrValue("column", ""),
 								Property: property.Property+"."+childElementItem.SelectAttrValue("property", ""),
 								LangType: childElementItem.SelectAttrValue("langType", ""),
+								IsPrimary: childElementItem.Tag == "id",
 							}
 
 							resultPropertyMap[childProperty.Column] = &childProperty
@@ -369,6 +371,8 @@ func exeMethodByXml(elementType ElementType, beanName string, sessionEngine Sess
 		defer session.Close()
 	}
 	var haveLastReturnValue = returnValue != nil && (*returnValue).IsNil() == false
+
+	sql = session.ProcessSQL(sql)
 	//do CRUD
 	if elementType == Element_Select && haveLastReturnValue {
 		//is select and have return value
@@ -520,6 +524,14 @@ func scanStructArgFields(v reflect.Value, tag *TagArg) map[string]interface{} {
 		var typeValue = t.Field(i)
 		var field = v.Field(i)
 
+		if typeValue.Anonymous {
+			for k, v := range scanStructArgFields(field, nil) {
+				parameters[k] = v
+				structArg[k] = v
+			}
+			continue
+		}
+
 		var obj interface{}
 		if field.CanInterface() {
 			obj = field.Interface()
@@ -528,7 +540,7 @@ func scanStructArgFields(v reflect.Value, tag *TagArg) map[string]interface{} {
 		if strings.Index(jsonKey, ",") != -1 {
 			jsonKey = strings.Split(jsonKey, ",")[0]
 		}
-		if jsonKey != "" {
+		if jsonKey != "" && jsonKey != "-" {
 			parameters[jsonKey] = obj
 			structArg[jsonKey] = obj
 			parameters[typeValue.Name] = obj
