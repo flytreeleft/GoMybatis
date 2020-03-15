@@ -91,7 +91,9 @@ func (it *NodeForEach) Eval(env map[string]interface{}, arg_array *[]interface{}
 		break
 	}
 	var newTempSql bytes.Buffer
-	var tempSqlString = bytes.Trim(tempSql.Bytes(), it.separator)
+	// bytes.Trim(s []byte, cutset string)是从cutset中匹配任意一个字符并截断，在separator含多个字符时会出现问题
+	var tempSqlString = bytes.TrimPrefix(tempSql.Bytes(), ([]byte)(it.separator))
+	tempSqlString = bytes.TrimSuffix(tempSqlString, ([]byte)(it.separator))
 	tempSql.Reset()
 	newTempSql.WriteString(it.open)
 	newTempSql.Write(tempSqlString)

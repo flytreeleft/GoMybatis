@@ -117,7 +117,7 @@ func (it NodeParser) Parser(mapperXml []etree.Token) []Node {
 					var childNodes = it.Parser(childItems)
 					for _, v := range childNodes {
 						if v.Type() == NWhen {
-							n.whenNodes = append(n.whenNodes, childNodes...)
+							n.whenNodes = append(n.whenNodes, v)
 						} else if v.Type() == NOtherwise {
 							if n.otherwiseNode != nil {
 								panic("element only support one Otherwise node!")

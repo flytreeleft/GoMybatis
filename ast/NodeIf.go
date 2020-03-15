@@ -1,6 +1,10 @@
 package ast
 
-import "github.com/zhuxiujia/GoMybatis/utils"
+import (
+	"strings"
+
+	"github.com/zhuxiujia/GoMybatis/utils"
+)
 
 //判断节点
 type NodeIf struct {
@@ -19,12 +23,13 @@ func (it *NodeIf) Eval(env map[string]interface{}, arg_array *[]interface{}) ([]
 	if it.holder == nil {
 		return nil, nil
 	}
-	var result, err = it.holder.GetExpressionEngineProxy().LexerAndEval(it.test, env)
+	var test = strings.ReplaceAll(it.test, "\n", " ")
+	var result, err = it.holder.GetExpressionEngineProxy().LexerAndEval(test, env)
 	if err != nil {
-		err = utils.NewError("GoMybatisSqlBuilder", "[GoMybatis] <test `", it.test, `> fail,`, err.Error())
+		err = utils.NewError("GoMybatisSqlBuilder", "[GoMybatis] <test `", it.test, "`> fail,", err.Error())
 	}
 	if result.(bool) {
 		return DoChildNodes(it.childs, env, arg_array)
 	}
-	return nil, nil
+	return nil, err
 }

@@ -23,5 +23,9 @@ func (it *NodeChoose) Eval(env map[string]interface{}, arg_array *[]interface{})
 			return r, nil
 		}
 	}
+
+	if it.otherwiseNode == nil {
+		return nil, nil
+	}
 	return it.otherwiseNode.Eval(env, arg_array)
 }

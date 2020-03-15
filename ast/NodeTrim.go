@@ -48,6 +48,10 @@ func (it *NodeTrim) Eval(env map[string]interface{}, arg_array *[]interface{}) (
 			}
 		}
 	}
+	if sql == nil {
+		return nil, nil
+	}
+
 	var newBuffer bytes.Buffer
 	newBuffer.WriteString(` `)
 	newBuffer.Write(it.prefix)

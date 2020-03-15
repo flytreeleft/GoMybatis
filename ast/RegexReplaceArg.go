@@ -7,6 +7,10 @@ import (
 	"strings"
 )
 
+const (
+	SQLPlaceholder = "[(-:__???__:-)]"
+)
+
 //执行替换操作
 func Replace(findStrs []string, data string, typeConvert SqlArgTypeConvert, arg map[string]interface{}, engine ExpressionEngine, arg_array *[]interface{}) (string, error) {
 	for _, findStr := range findStrs {
@@ -25,7 +29,7 @@ func Replace(findStrs []string, data string, typeConvert SqlArgTypeConvert, arg 
 			*arg_array = append(*arg_array, evalData)
 		}
 		//replace to ' ? '
-		data = strings.Replace(data, "#{"+findStr+"}", " ? ", -1)
+		data = strings.Replace(data, "#{"+findStr+"}", SQLPlaceholder, -1)
 	}
 
 	return data, nil
