@@ -1,11 +1,16 @@
 package GoMybatis
 
 import (
+	"bytes"
 	"database/sql"
 	"errors"
+	"fmt"
+	"strconv"
+	"strings"
+
+	"github.com/zhuxiujia/GoMybatis/ast"
 	"github.com/zhuxiujia/GoMybatis/tx"
 	"github.com/zhuxiujia/GoMybatis/utils"
-	"strconv"
 )
 
 //本地直连session
@@ -452,6 +457,25 @@ func (it *LocalSession) QueryPrepareNew(sqlPrepare string, args ...interface{}) 
 		return rows, nil
 	}
 	return nil, nil
+}
+
+func (it *LocalSession) ProcessSQL(sql string) string {
+	// http://go-database-sql.org/prepared.html#parameter-placeholder-syntax
+	switch it.driver {
+	case "postgres":
+		var sqlTmp bytes.Buffer
+		for i, s := range strings.Split(sql+" ", ast.SQLPlaceholder) {
+			if i > 0 {
+				sqlTmp.WriteString(fmt.Sprintf(" $%d ", i))
+			}
+			sqlTmp.WriteString(s)
+		}
+		sql = sqlTmp.String()
+	default:
+		sql = strings.ReplaceAll(sql, ast.SQLPlaceholder, " ? ")
+	}
+
+	return sql
 }
 
 func (it *LocalSession) ExecPrepare(sqlPrepare string, args ...interface{}) (*Result, error) {

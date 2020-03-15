@@ -49,6 +49,12 @@ func (it *SessionFactorySession) QueryPrepareNew(sqlorArgs string, args ...inter
 	}
 	return it.Session.QueryPrepareNew(sqlorArgs, args...)
 }
+func (it *SessionFactorySession) ProcessSQL(sql string) string {
+	if it.Session == nil {
+		return sql
+	}
+	return it.Session.ProcessSQL(sql)
+}
 func (it *SessionFactorySession) ExecPrepare(sqlorArgs string, args ...interface{}) (*Result, error) {
 	if it.Session == nil {
 		return nil, utils.NewError("SessionFactorySession", " can not run Exec(),it.Session == nil")
