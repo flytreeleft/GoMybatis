@@ -12,7 +12,7 @@ func GetDeepPtr(v reflect.Value) reflect.Value {
 	if v.IsValid() {
 		v = v.Elem()
 		if v.IsValid() && (v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface) {
-			GetDeepPtr(v)
+			return GetDeepPtr(v)
 		}
 	}
 	return v
