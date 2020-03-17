@@ -14,6 +14,7 @@ type GoMybatisEngine struct {
 	isInit bool         //是否初始化
 
 	objMap map[string]interface{}
+	varsMap map[string]interface{}
 
 	dataSourceRouter    DataSourceRouter      //动态数据源路由器
 	log                 Log                   //日志实现类
@@ -62,6 +63,10 @@ func (it GoMybatisEngine) New() GoMybatisEngine {
 	if it.sqlBuilder == nil {
 		var expressionEngineProxy = ExpressionEngineProxy{}.New(it.ExpressionEngine(), true)
 		var builder = GoMybatisSqlBuilder{}.New(it.SqlArgTypeConvert(), expressionEngineProxy, it.Log(), it.LogEnable())
+
+		builder.getVars = func() map[string]interface{} {
+			return it.varsMap
+		}
 		it.sqlBuilder = &builder
 	}
 
@@ -74,6 +79,7 @@ func (it GoMybatisEngine) New() GoMybatisEngine {
 		it.goroutineSessionMap = &gr
 	}
 	it.objMap = map[string]interface{}{}
+	it.varsMap = map[string]interface{}{}
 	it.goroutineIDEnable = true
 	return it
 }
@@ -219,6 +225,10 @@ func (it *GoMybatisEngine) SetTempleteDecoder(decoder TempleteDecoder) {
 
 func (it *GoMybatisEngine) GoroutineSessionMap() *GoroutineSessionMap {
 	return it.goroutineSessionMap
+}
+
+func (it *GoMybatisEngine) AddVar(name string, val interface{})  {
+	it.varsMap[name] = val
 }
 
 func (it *GoMybatisEngine) RegisterObj(ptr interface{}, name string) {
