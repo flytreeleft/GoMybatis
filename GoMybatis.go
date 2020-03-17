@@ -233,37 +233,49 @@ func makeResultMaps(xmls map[string]etree.Token) map[string]map[string]*ResultPr
 		if typeString == "*etree.Element" {
 			var xmlItem = item.(*etree.Element)
 			if xmlItem.Tag == Element_ResultMap {
-				var resultPropertyMap = make(map[string]*ResultProperty)
-				for _, elementItem := range xmlItem.ChildElements() {
-					var property = ResultProperty{
-						XMLName:  elementItem.Tag,
-						Column:   elementItem.SelectAttrValue("column", ""),
-						Property: elementItem.SelectAttrValue("property", ""),
-						LangType: elementItem.SelectAttrValue("langType", ""),
-						IsPrimary: elementItem.Tag == "id",
-					}
-
-					if elementItem.Tag == "association" || elementItem.Tag == "collection" {
-						for _, childElementItem := range elementItem.ChildElements() {
-							var childProperty = ResultProperty{
-								XMLName:  childElementItem.Tag,
-								Column:   childElementItem.SelectAttrValue("column", ""),
-								Property: property.Property+"."+childElementItem.SelectAttrValue("property", ""),
-								LangType: childElementItem.SelectAttrValue("langType", ""),
-								IsPrimary: childElementItem.Tag == "id",
-							}
-
-							resultPropertyMap[childProperty.Column] = &childProperty
-						}
-					} else {
-						resultPropertyMap[property.Column] = &property
-					}
-				}
+				var resultPropertyMap = makeResultPropertyMap(xmlItem)
 				resultMaps[xmlItem.SelectAttrValue("id", "")] = resultPropertyMap
 			}
 		}
 	}
 	return resultMaps
+}
+
+func makeResultPropertyMap(xmlItem *etree.Element) map[string]*ResultProperty {
+	var resultPropertyMap = make(map[string]*ResultProperty)
+	for _, elementItem := range xmlItem.ChildElements() {
+		if elementItem.Tag == "include" {
+			for k, v := range makeResultPropertyMap(elementItem) {
+				resultPropertyMap[k] = v
+			}
+			continue
+		}
+
+		var property = ResultProperty{
+			XMLName:  elementItem.Tag,
+			Column:   elementItem.SelectAttrValue("column", ""),
+			Property: elementItem.SelectAttrValue("property", ""),
+			LangType: elementItem.SelectAttrValue("langType", ""),
+			IsPrimary: elementItem.Tag == "id",
+		}
+
+		if elementItem.Tag == "association" || elementItem.Tag == "collection" {
+			for _, childElementItem := range elementItem.ChildElements() {
+				var childProperty = ResultProperty{
+					XMLName:  childElementItem.Tag,
+					Column:   childElementItem.SelectAttrValue("column", ""),
+					Property: property.Property+"."+childElementItem.SelectAttrValue("property", ""),
+					LangType: childElementItem.SelectAttrValue("langType", ""),
+					IsPrimary: childElementItem.Tag == "id",
+				}
+
+				resultPropertyMap[childProperty.Column] = &childProperty
+			}
+		} else {
+			resultPropertyMap[property.Column] = &property
+		}
+	}
+	return resultPropertyMap
 }
 
 //return a map map[`method`]*MapperXml
