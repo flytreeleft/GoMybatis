@@ -57,6 +57,9 @@ func getObjV(key string, operator Operator, av reflect.Value) (*reflect.Value, e
 		av = GetDeepPtr(av)
 	}
 
+	if !av.IsValid() {
+		return nil, nil
+	}
 	if av.Kind() == reflect.Map {
 		var mapV = av.MapIndex(reflect.ValueOf(operator))
 		return &mapV, nil
