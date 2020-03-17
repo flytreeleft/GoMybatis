@@ -286,6 +286,10 @@ func makeMethodXmlMap(bean reflect.Value, mapperTree map[string]etree.Token, sql
 				}
 				panic("[GoMybatis] can not find method " + beanType.String() + "." + fieldItem.Name + "() in xml !")
 			}
+		} else if fieldItem.Anonymous { // 支持扫描定义在被继承的结构体上的方法
+			for k, v := range makeMethodXmlMap(reflect.New(fieldItem.Type), mapperTree, sqlBuilder) {
+				methodXmlMap[k] = v
+			}
 		}
 	}
 	return methodXmlMap
@@ -494,6 +498,10 @@ func buildSql(proxyArg ProxyArg, nodes []ast.Node, sqlBuilder SqlBuilder, array_
 
 //scan params
 func scanStructArgFields(v reflect.Value, tag *TagArg) map[string]interface{} {
+	if v.Kind() == reflect.Interface { // 获取interface的真实value，以支持解构定义为interface的参数
+		v = reflect.ValueOf(v.Interface()).Elem()
+	}
+
 	var t = v.Type()
 	parameters := make(map[string]interface{})
 	if v.Kind() == reflect.Ptr {
@@ -536,6 +544,11 @@ func scanStructArgFields(v reflect.Value, tag *TagArg) map[string]interface{} {
 		if field.CanInterface() {
 			obj = field.Interface()
 		}
+		// 深度解构被引用的结构体
+		if isCustomStruct(typeValue.Type) || (field.Kind() == reflect.Ptr && isCustomStruct(typeValue.Type.Elem())) {
+			obj = scanStructArgFields(field, nil)
+		}
+
 		var jsonKey = typeValue.Tag.Get(`json`)
 		if strings.Index(jsonKey, ",") != -1 {
 			jsonKey = strings.Split(jsonKey, ",")[0]
@@ -558,6 +571,9 @@ func scanStructArgFields(v reflect.Value, tag *TagArg) map[string]interface{} {
 
 func isCustomStruct(value reflect.Type) bool {
 	if value.Kind() == reflect.Struct && value.String() != GoMybatis_Time && value.String() != GoMybatis_Time_Ptr {
+		return true
+	} else if value.Kind() == reflect.Interface && reflect.ValueOf(value).Elem().Kind() == reflect.Struct {
+		// 支持以interface引入的结构体
 		return true
 	} else {
 		return false
