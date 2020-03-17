@@ -90,9 +90,9 @@ func (it GoMybatisEngine) initCheck() {
 	}
 }
 
-func (it *GoMybatisEngine) WriteMapperPtr(ptr interface{}, xml []byte) {
+func (it *GoMybatisEngine) WriteMapperPtr(ptr interface{}, xmls ...[]byte) {
 	it.initCheck()
-	WriteMapperPtrByEngine(ptr, xml, it)
+	WriteMapperPtrByEngine(ptr, xmls, it)
 }
 
 func (it *GoMybatisEngine) Name() string {

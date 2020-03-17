@@ -20,22 +20,22 @@ type Mapper struct {
 
 //推荐默认使用单例传入
 //根据sessionEngine写入到mapperPtr，value:指向mapper指针反射对象，xml：xml数据，sessionEngine：session引擎，enableLog:是否允许日志输出，log：日志实现
-func WriteMapperByValue(value reflect.Value, xml []byte, sessionEngine SessionEngine) {
+func WriteMapperByValue(value reflect.Value, xmls [][]byte, sessionEngine SessionEngine) {
 	if value.Kind() != reflect.Ptr {
 		panic("AopProxy: AopProxy arg must be a pointer")
 	}
-	WriteMapper(value, xml, sessionEngine)
+	WriteMapper(value, xmls, sessionEngine)
 	sessionEngine.RegisterObj(value.Interface(), value.Type().Elem().Name())
 }
 
 //推荐默认使用单例传入
 //根据sessionEngine写入到mapperPtr，ptr:指向mapper指针，xml：xml数据，sessionEngine：session引擎，enableLog:是否允许日志输出，log：日志实现
-func WriteMapperPtrByEngine(ptr interface{}, xml []byte, sessionEngine SessionEngine) {
+func WriteMapperPtrByEngine(ptr interface{}, xmls [][]byte, sessionEngine SessionEngine) {
 	v := reflect.ValueOf(ptr)
 	if v.Kind() != reflect.Ptr {
 		panic("AopProxy: AopProxy arg must be a pointer")
 	}
-	WriteMapperByValue(v, xml, sessionEngine)
+	WriteMapperByValue(v, xmls, sessionEngine)
 }
 
 //写入方法内容，例如
@@ -49,9 +49,16 @@ func WriteMapperPtrByEngine(ptr interface{}, xml []byte, sessionEngine SessionEn
 //func的基本类型的参数（例如string,int,time.Time,int64,float....）个数无限制(并且需要用Tag指定参数名逗号隔开,例如`mapperParams:"id,phone"`)，返回值必须有error
 //func的结构体参数无需指定mapperParams的tag，框架会自动扫描它的属性，封装为map处理掉
 //使用WriteMapper函数设置代理后即可正常使用。
-func WriteMapper(bean reflect.Value, xml []byte, sessionEngine SessionEngine) {
+func WriteMapper(bean reflect.Value, xmls [][]byte, sessionEngine SessionEngine) {
 	beanCheck(bean)
-	var mapperTree = LoadMapperXml(xml)
+	var mapperTree = make(map[string]etree.Token)
+	for _, xml := range xmls {
+		for k, v := range LoadMapperXmlNew(xml,false) {
+			mapperTree[k] = v
+		}
+	}
+	processIncludeElement(&mapperTree)
+
 	sessionEngine.TempleteDecoder().DecodeTree(mapperTree, bean.Type())
 	//构建期使用的map，无需考虑并发安全
 	var methodXmlMap = makeMethodXmlMap(bean, mapperTree, sessionEngine.SqlBuilder())

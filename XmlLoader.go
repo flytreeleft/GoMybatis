@@ -1,15 +1,20 @@
 package GoMybatis
 
 import (
+	"reflect"
+
 	"github.com/zhuxiujia/GoMybatis/lib/github.com/beevik/etree"
 	"github.com/zhuxiujia/GoMybatis/utils"
-	"reflect"
 )
 
 const Element_Mapper = "mapper"
 const ID = `id`
 
 func LoadMapperXml(bytes []byte) (items map[string]etree.Token) {
+	return LoadMapperXmlNew(bytes, true)
+}
+
+func LoadMapperXmlNew(bytes []byte, processInclude bool) (items map[string]etree.Token) {
 	utils.FixTestExpressionSymbol(&bytes)
 	doc := etree.NewDocument()
 	if err := doc.ReadFromBytes(bytes); err != nil {
@@ -43,27 +48,33 @@ func LoadMapperXml(bytes []byte) (items map[string]etree.Token) {
 			items[elementID] = s
 		}
 	}
-	for _, mapperXml := range items {
+	if processInclude {
+		processIncludeElement(&items)
+	}
+	return items
+}
+
+func processIncludeElement(xmlMap *map[string]etree.Token)  {
+	for _, mapperXml := range *xmlMap {
 		var typeString = reflect.TypeOf(mapperXml).String()
 		if typeString == "*etree.Element" {
 			var el = mapperXml.(*etree.Element)
 			for _, v := range el.ChildElements() {
-				includeElementReplace(v, &items)
+				includeElementReplace(v, xmlMap)
 			}
 		}
 	}
-	return items
 }
 
 func includeElementReplace(xml *etree.Element, xmlMap *map[string]etree.Token) {
 	if xml.Tag == Element_Include {
 		var refid = xml.SelectAttr("refid").Value
 		if refid == "" {
-			panic(`[GoMybatis] xml <includ refid=""> 'refid' can not be ""`)
+			panic(`[GoMybatis] xml <include refid=""> 'refid' can not be ""`)
 		}
 		var mapperXml = (*xmlMap)[refid]
 		if mapperXml == nil {
-			panic(`[GoMybatis] xml <includ refid="` + refid + `"> element can not find !`)
+			panic(`[GoMybatis] xml <include refid="` + refid + `"> element can not find !`)
 		}
 		if xml != nil {
 			(*xml).Child = mapperXml.(*etree.Element).Child

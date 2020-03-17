@@ -34,7 +34,7 @@ type SessionEngine interface {
 	//打开数据库
 	Open(driverName, dataSourceName string) (*sql.DB, error)
 	//写方法到mapper
-	WriteMapperPtr(ptr interface{}, xml []byte)
+	WriteMapperPtr(ptr interface{}, xmls ...[]byte)
 	//引擎名称
 	Name() string
 	//创建session
