@@ -98,6 +98,7 @@ func (scope *Scope) scan(rows *sql.Rows, columns []string, fields []*Field, resu
 			if field.Match(property.Property) {
 				if field.Field.Kind() == reflect.Ptr {
 					values[index] = field.Field.Addr().Interface()
+					resetFields[index] = field
 				} else {
 					reflectValue := reflect.New(reflect.PtrTo(field.Struct.Type))
 					reflectValue.Elem().Set(field.Field.Addr())
@@ -118,11 +119,28 @@ func (scope *Scope) scan(rows *sql.Rows, columns []string, fields []*Field, resu
 		return err
 	}
 
+	resetFieldNames := map[string]bool{}
 	for index, field := range resetFields {
-		if v := reflect.ValueOf(values[index]).Elem().Elem(); v.IsValid() {
-			field.Field.Set(v)
+		v := reflect.ValueOf(values[index]).Elem().Elem()
+		if err := field.Set(v); err != nil {
+			return err
+		}
+
+		fieldNames := strings.Split(field.StructField.Name, ".")
+		for i := 1; i < len(fieldNames); i++ {
+			name := strings.Join(fieldNames[0:i], ".")
+			resetFieldNames[name] = true
+		}
+		resetFieldNames[field.StructField.Name] = true
+	}
+	// clean the unused fields
+	for _, field := range fields {
+		if resetFieldNames[field.StructField.Name] != true {
+			// ignore the clean error
+			field.Set(reflect.Zero(field.Field.Type()))
 		}
 	}
+
 	return nil
 }
 
