@@ -124,6 +124,8 @@ func (scope *Scope) scan(rows *sql.Rows, columns []string, fields []*Field, resu
 		v := reflect.ValueOf(values[index]).Elem().Elem()
 		if err := field.Set(v); err != nil {
 			return err
+		} else if !v.IsValid() {
+			continue
 		}
 
 		fieldNames := strings.Split(field.StructField.Name, ".")
