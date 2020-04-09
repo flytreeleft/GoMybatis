@@ -68,6 +68,12 @@ func (it GoMybatisSqlResultDecoder) DecodeNew(resultMap map[string]*ResultProper
 		if resultType.Kind() == reflect.Ptr {
 			isPtr = true
 			resultType = resultType.Elem()
+		} else if resultType.Kind() != reflect.Struct {
+			if res, err := rows2maps(rows); err != nil {
+				return 0, err
+			} else {
+				return len(res), it.Decode(resultMap, res, result)
+			}
 		}
 	} else if kind != reflect.Struct {
 		if res, err := rows2maps(rows); err != nil {
