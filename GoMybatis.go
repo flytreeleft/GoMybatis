@@ -567,8 +567,11 @@ func scanStructArgFields(v reflect.Value, tag *TagArg) map[string]interface{} {
 		if field.CanInterface() {
 			obj = field.Interface()
 		}
-		// 深度解构被引用的结构体
-		if isCustomStruct(typeValue.Type) || (field.Kind() == reflect.Ptr && isCustomStruct(typeValue.Type.Elem())) {
+		// 深度解构被引用的非nil结构体
+		if !field.IsNil() &&
+			(isCustomStruct(typeValue.Type) ||
+				(field.Kind() == reflect.Ptr &&
+					isCustomStruct(typeValue.Type.Elem()))) {
 			obj = scanStructArgFields(field, nil)
 		}
 
