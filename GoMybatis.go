@@ -2,13 +2,14 @@ package GoMybatis
 
 import (
 	"bytes"
-	"github.com/zhuxiujia/GoMybatis/ast"
-	"github.com/zhuxiujia/GoMybatis/lib/github.com/beevik/etree"
-	"github.com/zhuxiujia/GoMybatis/utils"
 	"log"
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/zhuxiujia/GoMybatis/ast"
+	"github.com/zhuxiujia/GoMybatis/lib/github.com/beevik/etree"
+	"github.com/zhuxiujia/GoMybatis/utils"
 )
 
 const NewSessionFunc = "NewSession" //NewSession method,auto write implement body code
@@ -568,10 +569,9 @@ func scanStructArgFields(v reflect.Value, tag *TagArg) map[string]interface{} {
 			obj = field.Interface()
 		}
 		// 深度解构被引用的非nil结构体
-		if !field.IsNil() &&
-			(isCustomStruct(typeValue.Type) ||
-				(field.Kind() == reflect.Ptr &&
-					isCustomStruct(typeValue.Type.Elem()))) {
+		if (isCustomStruct(typeValue.Type) && !field.IsNil()) ||
+			(field.Kind() == reflect.Ptr && !field.IsNil() &&
+				isCustomStruct(typeValue.Type.Elem())) {
 			obj = scanStructArgFields(field, nil)
 		}
 
